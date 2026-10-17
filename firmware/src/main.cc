@@ -25,6 +25,7 @@
 #include "i2c.h"
 #include "mcp4651.h"
 #include "our_descriptor.h"
+#include "powermic.h"
 #include "platform.h"
 #include "remapper.h"
 #include "tick.h"
@@ -72,25 +73,20 @@ void __no_inline_not_in_flash_func(sof_handler)(uint32_t frame_count) {
 }
 
 bool do_send_report(uint8_t interface, const uint8_t* report_with_id, uint8_t len) {
-    // Internal PowerMic target report.
-    // Convert [ID 4][buttons 1-8][buttons 9-11 + padding]
-    // into genuine PowerMic [00][buttons 1-8][buttons 9-11].
-    if ((interface == 0) && (len >= 3) && (report_with_id[0] == 4)) {
-        uint8_t powermic_report[3] = {
-            0x00,
-            report_with_id[1],
-            (uint8_t)(report_with_id[2] & 0x07),
-        };
-
-        tud_hid_n_report(
-            1,
-            0,
-            powermic_report,
-            sizeof(powermic_report)
-        );
-
+    // Synthetic PowerMic report (Report ID 4 on interface 0): never sent as-is.
+    // It is queued and sent as a genuine 3-byte PowerMic report on interface 1
+    // by powermic_task(), which waits for the endpoint instead of dropping it.
+    if ((interface == 0) && (report_with_id[0] == POWERMIC_SYNTHETIC_REPORT_ID)) {
+        powermic_queue_from_synthetic(report_with_id, len);
         return true;
     }
+
+    // Interface 1 is the PowerMic, so the configurator's live input monitor
+    // (Report ID 101) travels on interface 0 next to the config collection.
+    if (interface == 1) {
+        interface = 0;
+    }
+
 
     if (tud_suspended() &&
         (our_descriptor->should_cause_wakeup != nullptr) &&
@@ -268,6 +264,12 @@ int main() {
 #endif
     tick_init();
     load_config(FLASH_CONFIG_IN_MEMORY);
+    // This firmware only supports the keyboard/mouse modes: the gamepad modes
+    // change VID/PID (losing the PowerMic identity) and have no report IDs, so
+    // they could not carry the configuration collection either.
+    if (our_descriptor_number > 1) {
+        our_descriptor_number = 0;
+    }
     our_descriptor = &our_descriptors[our_descriptor_number];
     parse_our_descriptor();
     set_mapping_from_config();
@@ -326,7 +328,10 @@ int main() {
         if (tud_hid_n_ready(0) || tud_suspended()) {
             send_report(do_send_report);
         }
-        // Interface 1 is reserved for PowerMic in runtime firmware.
+        powermic_task();
+        if (monitor_enabled && tud_hid_n_ready(0)) {
+            send_monitor_report(do_send_report);
+        }
         if (our_descriptor->main_loop_task != nullptr) {
             our_descriptor->main_loop_task();
         }

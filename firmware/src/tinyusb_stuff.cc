@@ -30,12 +30,14 @@
 #include "globals.h"
 #include "our_descriptor.h"
 #include "platform.h"
+#include "powermic.h"
 #include "remapper.h"
 
-// These IDs are bogus. If you want to distribute any hardware using this,
-// you will have to get real ones.
+// Nuance PowerMic II identity (Dictaphone Corp. VID). bcdDevice and strings
+// match the genuine handset and the working Tartarus "pmtest" build.
 #define USB_VID 0x0554
 #define USB_PID 0x1001
+#define USB_BCD_DEVICE 0x0143
 
 tusb_desc_device_t desc_device = {
     .bLength = sizeof(tusb_desc_device_t),
@@ -48,7 +50,7 @@ tusb_desc_device_t desc_device = {
 
     .idVendor = USB_VID,
     .idProduct = USB_PID,
-    .bcdDevice = 0x0100,
+    .bcdDevice = USB_BCD_DEVICE,
 
     .iManufacturer = 0x01,
     .iProduct = 0x02,
@@ -58,54 +60,41 @@ tusb_desc_device_t desc_device = {
 };
 
 
-const uint8_t powermic_report_descriptor[] = {
-    0x05, 0x01, 0x09, 0x00, 0xA1, 0x01,
-    0x05, 0x08, 0x09, 0x4B, 0x15, 0x00,
-    0x25, 0x01, 0x95, 0x08, 0x75, 0x01,
-    0x91, 0x02, 0x05, 0x09, 0x15, 0x00,
-    0x25, 0x01, 0x75, 0x01, 0x95, 0x08,
-    0x81, 0x01, 0x19, 0x01, 0x29, 0x0B,
-    0x15, 0x00, 0x25, 0x01, 0x95, 0x0B,
-    0x81, 0x02, 0x95, 0x05, 0x81, 0x01,
-    0x05, 0xFF, 0x09, 0x00, 0x15, 0x00,
-    0x26, 0xFF, 0x00, 0x75, 0x08, 0x95,
-    0x27, 0xB1, 0x00, 0xC0,
-};
 
 const uint8_t configuration_descriptor0[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
-    TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, our_descriptors[0].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
+    TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, our_descriptors[0].descriptor_length + config_report_descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, powermic_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor1[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
-    TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, our_descriptors[1].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
+    TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, our_descriptors[1].descriptor_length + config_report_descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, powermic_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor2[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_INOUT_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_INOUT_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[2].descriptor_length, 0x02, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, powermic_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor3[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[3].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, powermic_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor4[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_INOUT_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_INOUT_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[4].descriptor_length, 0x02, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, powermic_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor5[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[5].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, powermic_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t* configuration_descriptors[] = {
@@ -119,12 +108,8 @@ const uint8_t* configuration_descriptors[] = {
 
 char const* string_desc_arr[] = {
     (const char[]){ 0x09, 0x04 },  // 0: is supported language is English (0x0409)
-#ifdef PICO_RP2350
-    "RP2350",  // 1: Manufacturer
-#else
-    "RP2040",  // 1: Manufacturer
-#endif
-    "HID Remapper XXXX",  // 2: Product
+    "Nuance",         // 1: Manufacturer
+    "PowerMicII-NS",  // 2: Product
     "123456789012",       // 3: Serial Number
 };
 
@@ -148,9 +133,28 @@ uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
 // Invoked when received GET HID REPORT DESCRIPTOR
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
+//
+// Interface 0 = our keyboard/mouse/consumer descriptor (with the synthetic
+// PowerMic targets) followed by HID Remapper's vendor configuration
+// collection (Report IDs 100/101). Each top-level collection becomes its own
+// HID device on the host, so the stock web configurator (which looks for
+// Usage Page 0xFF00 / Usage 0x20) finds it without a separate config build.
+// Only modes 0 and 1 use report IDs, so only they can carry it; main.cc
+// restricts this firmware to those modes.
+static uint8_t itf0_report_descriptor[1024];
+
+static bool mode_has_config_collection() {
+    return (our_descriptor->idx == 0) || (our_descriptor->idx == 1);
+}
+
 uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf) {
     if (itf == 0) {
-        return our_descriptor->descriptor;
+        if (!mode_has_config_collection()) {
+            return our_descriptor->descriptor;
+        }
+        memcpy(itf0_report_descriptor, our_descriptor->descriptor, our_descriptor->descriptor_length);
+        memcpy(itf0_report_descriptor + our_descriptor->descriptor_length, config_report_descriptor, config_report_descriptor_length);
+        return itf0_report_descriptor;
     } else if (itf == 1) {
         return powermic_report_descriptor;
     }
@@ -189,12 +193,6 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
             _desc_str[1 + i] = str[i];
         }
 
-        if (index == 2) {
-            uint64_t unique_id = get_unique_id();
-            for (uint8_t i = 0; i < 4; i++) {
-                _desc_str[1 + chr_count - 4 + i] = id_chars[(unique_id >> (15 - i * 5)) & 0x1F];
-            }
-        }
 
         if (index == 3) {
             uint64_t unique_id = get_unique_id();
@@ -212,9 +210,12 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
 
 uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) {
     if (itf == 0) {
+        if ((report_id == REPORT_ID_CONFIG) || (report_id == REPORT_ID_MONITOR)) {
+            return handle_get_report1(report_id, buffer, reqlen);
+        }
         return handle_get_report0(report_id, buffer, reqlen);
     } else {
-        return 0;
+        return powermic_get_report(report_id, report_type, buffer, reqlen);
     }
 }
 
@@ -224,9 +225,13 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
             report_id = buffer[0];
             buffer++;
         }
+        if (report_id == REPORT_ID_CONFIG) {
+            handle_set_report1(report_id, buffer, bufsize);
+            return;
+        }
         handle_set_report0(report_id, buffer, bufsize);
     } else {
-        // PowerMic LED output and feature reports are not needed for buttons.
+        powermic_set_report(report_id, report_type, buffer, bufsize);
     }
 }
 
@@ -238,6 +243,7 @@ void tud_hid_set_protocol_cb(uint8_t instance, uint8_t protocol) {
 
 void tud_mount_cb() {
     reset_resolution_multiplier();
+    powermic_reset();
     if (boot_protocol_keyboard) {
         boot_protocol_keyboard = false;
         boot_protocol_updated = true;

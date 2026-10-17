@@ -35,6 +35,7 @@ add_executable(remapper
     src/crc.cc
     src/descriptor_parser.cc
     src/tinyusb_stuff.cc
+    src/powermic.cc
     src/our_descriptor.cc
     src/globals.cc
     src/config.cc
@@ -92,6 +93,7 @@ add_executable(remapper_dual_a
     src/crc.cc
     src/descriptor_parser.cc
     src/tinyusb_stuff.cc
+    src/powermic.cc
     src/our_descriptor.cc
     src/globals.cc
     src/config.cc
@@ -162,6 +164,7 @@ add_executable(remapper_serial
     src/crc.cc
     src/descriptor_parser.cc
     src/tinyusb_stuff.cc
+    src/powermic.cc
     src/our_descriptor.cc
     src/globals.cc
     src/config.cc

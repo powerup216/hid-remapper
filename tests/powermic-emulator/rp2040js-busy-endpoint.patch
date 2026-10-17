@@ -1,0 +1,46 @@
+diff --git a/src/peripherals/usb.ts b/src/peripherals/usb.ts
+index f9efbd7..034fa30 100644
+--- a/src/peripherals/usb.ts
++++ b/src/peripherals/usb.ts
+@@ -234,6 +234,10 @@ export class RPUSBController extends BasePeripheral {
+   // Alarms
+   private readonly endpointReadAlarms: USBEndpointAlarm[];
+   private readonly endpointWriteAlarms: USBEndpointAlarm[];
++  // Test patch: emulate a host that only polls interrupt IN endpoint N every
++  // inPollDelayMicros[N] us. Until then the buffer stays busy on the device side.
++  inPollDelayMicros: Record<number, number> = {};
++  private pollAlarms: { alarm: IAlarm; buffer: Uint8Array | null }[] = [];
+   private readonly resetAlarm: IAlarm;
+   private readonly sofAlarm: IAlarm;
+   private readonly hostTransactionAlarm: IAlarm;
+@@ -279,6 +283,18 @@ export class RPUSBController extends BasePeripheral {
+         ),
+       );
+     }
++    for (let i = 0; i < ENDPOINT_COUNT; ++i) {
++      const entry: { alarm: IAlarm; buffer: Uint8Array | null } = { alarm: null as any, buffer: null };
++      entry.alarm = clock.createAlarm(() => {
++        const b = entry.buffer;
++        entry.buffer = null;
++        if (b) {
++          this.indicateBufferReady(i, false);
++          this.onEndpointWrite?.(i, b);
++        }
++      });
++      this.pollAlarms.push(entry);
++    }
+     this.resetAlarm = clock.createAlarm(() => {
+       this.sieStatus |= SIE_BUS_RESET;
+       this.sieStatusUpdated();
+@@ -520,6 +536,11 @@ export class RPUSBController extends BasePeripheral {
+         value &= ~USB_BUF_CTRL_FULL;
+         this.rp2040.usbDPRAMView.setUint32(offset, value, true);
+         const buffer = this.rp2040.usbDPRAM.slice(bufferOffset, bufferOffset + bufferLength);
++        if (endpoint !== 0 && this.inPollDelayMicros[endpoint]) {
++          this.pollAlarms[endpoint].buffer = buffer;
++          this.pollAlarms[endpoint].alarm.schedule(this.inPollDelayMicros[endpoint] * 1000);
++          return;
++        }
+         if (interrupt || !doubleBuffer) {
+           this.indicateBufferReady(endpoint, false);
+         }

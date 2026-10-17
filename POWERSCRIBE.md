@@ -8,11 +8,12 @@ The other six device types behave exactly like stock HID Remapper.
 
 ## Which firmware file
 
-It works on every board HID Remapper supports. The Mavercade HID Remapper is the standard HID Remapper board.
+It works on every board HID Remapper supports. The Mavercade HID Remapper is the MeisterConverter board.
 
 | Board | File |
 |---|---|
-| HID Remapper board (Mavercade, original dual-chip board) | `remapper_board.uf2` |
+| Mavercade HID Remapper (MeisterConverter) | `remapper_meisterconverter.uf2` |
+| HID Remapper board (original dual-chip board) | `remapper_board.uf2` |
 | HID Remapper board v7 | `remapper_board_v7.uf2` |
 | HID Remapper board v8 | `remapper_board_v8.uf2` |
 | Adafruit Feather RP2040 USB Host | `remapper_feather.uf2` |
@@ -85,8 +86,8 @@ Each top-level HID collection is its own device on the host. The configurator th
 git submodule update --init
 cd firmware
 mkdir build-board && cd build-board
-PICO_BOARD=remapper cmake ..          # or remapper_v7, remapper_v8, feather_host
-make remapper_dual_combined           # dual-chip boards; use "make remapper" for v8 and feather
+PICO_BOARD=meisterconverter cmake ..  # or remapper, remapper_v7, remapper_v8, feather_host
+make remapper                         # dual-chip boards (remapper, remapper_v7): make remapper_dual_combined
 ```
 
 The dual-chip build needs `srec_cat` (Debian/Ubuntu package `srecord`).

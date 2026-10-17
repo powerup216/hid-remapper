@@ -23,6 +23,9 @@
 //   Button 4  Next Field       00 08 00     Button 9  Enter/Select    00 00 01
 //   Button 5  Rewind           00 10 00     Button 10 Custom Right    00 00 02
 
+// PowerMic edition release marker (bump to trigger a CI firmware build).
+#define POWERMIC_EDITION_VERSION "2026-10-17"
+
 #define POWERMIC_SYNTHETIC_REPORT_ID 4
 #define POWERMIC_REPORT_LEN 3
 #define POWERMIC_FEATURE_LEN 39

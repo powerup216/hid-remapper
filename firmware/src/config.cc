@@ -551,8 +551,10 @@ void load_config_v13(const uint8_t* persisted_config) {
 
 void load_config(const uint8_t* persisted_config) {
     if (!checksum_ok(persisted_config, PERSISTED_CONFIG_SIZE) || !persisted_version_ok(persisted_config)) {
-        // PowerScribe distribution defaults for a fresh Feather.
-        // Existing valid persisted configurations still take precedence.
+        // Fresh board (no valid saved configuration): start in the PowerMic
+        // emulated device type with F1-F4 mapped to PowerMic buttons.
+        // A valid saved configuration always takes precedence.
+        our_descriptor_number = POWERMIC_DESCRIPTOR_NUMBER;
         config_mappings.clear();
 
         config_mappings.push_back((mapping_config11_t){

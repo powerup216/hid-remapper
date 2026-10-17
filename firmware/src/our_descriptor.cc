@@ -155,12 +155,20 @@ const uint8_t our_report_descriptor_kb_mouse[] = {
     0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0,                      // End Collection
 
-    // Synthetic PowerMic targets FF01:0001..FF01:000E = PowerMic buttons 1..14.
-    // Report ID 4 is never sent on interface 0: main.cc hands it to
-    // powermic.cc, which emits the genuine 3-byte report on interface 1.
-    POWERMIC_SYNTHETIC_COLLECTION
-
 };
+
+// Emulated device type 6: the mouse-and-keyboard descriptor followed by the
+// synthetic PowerMic targets FF01:0001..FF01:000E (PowerMic buttons 1..14).
+// Report ID 4 is never sent on interface 0: main.cc hands it to powermic.cc,
+// which emits the genuine 3-byte PowerMic report on interface 1.
+static const uint8_t powermic_synthetic_collection[] = { POWERMIC_SYNTHETIC_COLLECTION };
+static uint8_t our_report_descriptor_kb_mouse_powermic[sizeof(our_report_descriptor_kb_mouse) + sizeof(powermic_synthetic_collection)];
+static struct powermic_descriptor_init_t {
+    powermic_descriptor_init_t() {
+        memcpy(our_report_descriptor_kb_mouse_powermic, our_report_descriptor_kb_mouse, sizeof(our_report_descriptor_kb_mouse));
+        memcpy(our_report_descriptor_kb_mouse_powermic + sizeof(our_report_descriptor_kb_mouse), powermic_synthetic_collection, sizeof(powermic_synthetic_collection));
+    }
+} powermic_descriptor_init;
 
 const uint8_t our_report_descriptor_absolute[] = {
     0x05, 0x01,                // Usage Page (Generic Desktop Ctrls)
@@ -289,7 +297,6 @@ const uint8_t our_report_descriptor_absolute[] = {
     0x95, 0x01,                //   Report Count (1)
     0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0,                      // End Collection
-    POWERMIC_SYNTHETIC_COLLECTION,
 };
 
 const uint8_t our_report_descriptor_horipad[] = {
@@ -720,6 +727,18 @@ const our_descriptor_def_t our_descriptors[] = {
         .handle_received_report = do_handle_received_report,
         .clear_report = xac_compat_clear_report,
         .default_value = ps4_stadia_default_value,  // sic
+    },
+    {
+        .idx = POWERMIC_DESCRIPTOR_NUMBER,
+        .descriptor = our_report_descriptor_kb_mouse_powermic,
+        .descriptor_length = sizeof(our_report_descriptor_kb_mouse_powermic),
+        .vid = 0x0554,  // Nuance / Dictaphone
+        .pid = 0x1001,  // PowerMic II
+        .handle_received_report = do_handle_received_report,
+        .handle_get_report = kb_mouse_handle_get_report,
+        .handle_set_report = kb_mouse_handle_set_report,
+        .set_report_synchronous = kb_mouse_set_report_synchronous,
+        .should_cause_wakeup = kb_mouse_should_cause_wakeup,
     },
 };
 

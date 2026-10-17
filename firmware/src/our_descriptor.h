@@ -13,7 +13,10 @@
 
 #define MAX_INPUT_REPORT_ID 4
 
-#define NOUR_DESCRIPTORS 6
+#define NOUR_DESCRIPTORS 7
+
+// Emulated device type 6: keyboard/mouse + Nuance PowerMic II (see powermic.h).
+#define POWERMIC_DESCRIPTOR_NUMBER 6
 
 typedef void (*device_connected_t)(uint16_t interface, uint16_t vid, uint16_t pid);
 typedef void (*device_disconnected_t)(uint8_t dev_addr);

@@ -73,20 +73,21 @@ void __no_inline_not_in_flash_func(sof_handler)(uint32_t frame_count) {
 }
 
 bool do_send_report(uint8_t interface, const uint8_t* report_with_id, uint8_t len) {
-    // Synthetic PowerMic report (Report ID 4 on interface 0): never sent as-is.
-    // It is queued and sent as a genuine 3-byte PowerMic report on interface 1
-    // by powermic_task(), which waits for the endpoint instead of dropping it.
-    if ((interface == 0) && (report_with_id[0] == POWERMIC_SYNTHETIC_REPORT_ID)) {
-        powermic_queue_from_synthetic(report_with_id, len);
-        return true;
+    if (our_descriptor->idx == POWERMIC_DESCRIPTOR_NUMBER) {
+        // Synthetic PowerMic report (Report ID 4 on interface 0) is never sent
+        // as-is: it is queued and sent as a genuine 3-byte PowerMic report on
+        // interface 1 by powermic_task(), which waits for the endpoint to be
+        // free instead of dropping the report.
+        if ((interface == 0) && (report_with_id[0] == POWERMIC_SYNTHETIC_REPORT_ID)) {
+            powermic_queue_from_synthetic(report_with_id, len);
+            return true;
+        }
+        // Interface 1 is the PowerMic, so the configurator's input monitor
+        // (Report ID 101) travels on interface 0 next to the config collection.
+        if (interface == 1) {
+            interface = 0;
+        }
     }
-
-    // Interface 1 is the PowerMic, so the configurator's live input monitor
-    // (Report ID 101) travels on interface 0 next to the config collection.
-    if (interface == 1) {
-        interface = 0;
-    }
-
 
     if (tud_suspended() &&
         (our_descriptor->should_cause_wakeup != nullptr) &&
@@ -264,12 +265,6 @@ int main() {
 #endif
     tick_init();
     load_config(FLASH_CONFIG_IN_MEMORY);
-    // This firmware only supports the keyboard/mouse modes: the gamepad modes
-    // change VID/PID (losing the PowerMic identity) and have no report IDs, so
-    // they could not carry the configuration collection either.
-    if (our_descriptor_number > 1) {
-        our_descriptor_number = 0;
-    }
     our_descriptor = &our_descriptors[our_descriptor_number];
     parse_our_descriptor();
     set_mapping_from_config();
@@ -328,8 +323,12 @@ int main() {
         if (tud_hid_n_ready(0) || tud_suspended()) {
             send_report(do_send_report);
         }
-        powermic_task();
-        if (monitor_enabled && tud_hid_n_ready(0)) {
+        if (our_descriptor->idx == POWERMIC_DESCRIPTOR_NUMBER) {
+            powermic_task();
+            if (monitor_enabled && tud_hid_n_ready(0)) {
+                send_monitor_report(do_send_report);
+            }
+        } else if (monitor_enabled && tud_hid_n_ready(1)) {
             send_monitor_report(do_send_report);
         }
         if (our_descriptor->main_loop_task != nullptr) {

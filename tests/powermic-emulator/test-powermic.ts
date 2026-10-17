@@ -121,7 +121,20 @@ const t0 = Date.now();
 if (process.env.TRACE) setInterval(() => {
   writeSync(2, `[trace] wall ${((Date.now() - t0) / 1000).toFixed(0)}s sim ${(Number(sim.clock.nanos) / 1e6).toFixed(1)}ms PC=${mcu.core.PC.toString(16)} uart="${uartLine.slice(-60)}"\n`);
 }, 3000).unref();
+// Dual-chip boards: the A side only processes inputs on START_OF_FRAME ticks
+// sent by the B side over uart1. FAKE_B_SIDE=1 sends those ticks every 1 ms.
+function startFakeBSide() {
+  const msg = [0x08];
+  const c = crc32(Uint8Array.from(msg));
+  const raw = [...msg, c & 0xff, (c >>> 8) & 0xff, (c >>> 16) & 0xff, (c >>> 24) & 0xff];
+  const pkt: number[] = [];
+  for (const b of raw) { if (b === 0xc0) pkt.push(0xdb, 0xdc); else if (b === 0xdb) pkt.push(0xdb, 0xdd); else pkt.push(b); }
+  pkt.push(0xc0);
+  const al = (sim.clock as any).createAlarm(() => { for (const b of pkt) mcu.uart[1].feedByte(b); al.schedule(1e6); });
+  al.schedule(1e6);
+}
 async function main() {
+  if (process.env.FAKE_B_SIDE) startFakeBSide();
   mcu.gpio[5].setInputValue(true); // idle high (inputs are active-low)
   mcu.gpio[6].setInputValue(true);
   mcu.core.PC = 0x10000000;
@@ -181,6 +194,7 @@ async function main() {
   console.log(`GET_CONFIG: version ${gc.body[0]}, crc ok ${gc.ok}, mapping_count ${mappingCount}`);
   check(gc.ok && gc.body[0] === CONFIG_VERSION, 'configurator protocol works on runtime firmware (no config-mode flash needed)');
   check(mappingCount === 4, 'fresh board has the 4 default F1-F4 PowerMic mappings');
+  check(gc.body[23] === 6, `fresh board starts in emulated device type 6 (PowerMic) [got ${gc.body[23]}]`);
   const defaults: string[] = [];
   for (let i = 0; i < mappingCount; i++) {
     await cfg(6, u32(i)); // GET_MAPPING
@@ -256,6 +270,29 @@ async function main() {
 
   const inr2: Uint8Array = await getReport(1, 1, 0, 3);
   check(hex(inr2) === '00 00 00', 'GET_REPORT(Input) reflects released state after use');
+
+  // Optionally switch to stock "Mouse and keyboard" (type 0), persist, and dump
+  // flash so test-stock.ts can boot from it.
+  if (process.env.SAVE_STOCK_FLASH) {
+    const b = gc.body;
+    // set_config_t: flags, mask, partial_scroll_timeout(4), interval_override,
+    // tap_hold_threshold(4), gpio_debounce_time_ms, our_descriptor_number, macro_entry_duration
+    await cfg(2, [b[1], b[2], b[3], b[4], b[5], b[6], b[17], b[18], b[19], b[20], b[21], b[22], 0, b[24]]);
+    await cfg(7); // PERSIST_CONFIG
+    let rc = -1;
+    for (let i = 0; i < 50 && rc < 0; i++) {
+      await sleep(100);
+      const r: Uint8Array = await getReport(0, 3, 100, 33).catch(() => new Uint8Array());
+      if (r.length >= 2) rc = r[0] === 100 ? r[1] : r[0];
+    }
+    check(rc === 1, `configuration with device type 0 saved to flash (return code ${rc})`);
+    // rp2040js does not emulate flash programming, so copy the image the
+    // firmware built in persist_config()'s RAM buffer into flash ourselves.
+    const bufAddr = parseInt(process.env.PERSIST_BUF_ADDR!, 16) - 0x20000000;
+    const flashOff = parseInt(process.env.CONFIG_FLASH_OFFSET!, 16);
+    mcu.flash.set(mcu.sram.subarray(bufAddr, bufAddr + 4096), flashOff);
+    (await import('node:fs')).writeFileSync(process.env.SAVE_STOCK_FLASH, mcu.flash);
+  }
 
   console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`);
   process.exit(failures ? 1 : 0);

@@ -1,29 +1,53 @@
-# HID Remapper: PowerMic II edition (Adafruit Feather RP2040 USB Host)
+# HID Remapper: PowerMic edition
 
-This is HID Remapper r2026-05-25. It passes your keyboard and mouse through as normal and also presents itself to the PC as a Nuance PowerMic II. Any key, mouse button or GPIO input can be mapped to a PowerMic button. Those buttons reach PowerScribe through its PowerMic driver, so dictation works even when PowerScribe is not the focused window.
+This fork of [HID Remapper](https://github.com/jfedor2/hid-remapper) (based on r2026-05-25) adds a seventh **emulated device type: "Mouse and keyboard + PowerMic II (PowerScribe)"**.
 
-Build target: `PICO_BOARD=feather_host`.
+In that mode the remapper passes your keyboard and mouse through as normal and also presents itself to the PC as a Nuance PowerMic II. Any key, mouse button or GPIO input can be mapped to a PowerMic button. PowerScribe receives those buttons through its PowerMic driver, so dictation works without PowerScribe being the focused window. Dictation audio comes from your usual microphone; this device only provides the buttons.
 
-## USB architecture (unchanged: two HID interfaces)
+The other six device types behave exactly like stock HID Remapper.
 
-| | Interface 0 | Interface 1 |
-|---|---|---|
-| Purpose | Keyboard, mouse, consumer passthrough, plus HID Remapper configuration | PowerMic II buttons |
-| Report descriptor | HID Remapper keyboard/mouse descriptor + synthetic PowerMic targets (Report ID 4) + config collections (Report IDs 100/101) | Genuine 64-byte PowerMic II descriptor, verbatim |
-| Endpoint | 0x81, 1 ms | 0x83, 10 ms |
+## Which firmware file
 
-Device identity: VID `0x0554`, PID `0x1001`, bcdDevice `0x0143`, manufacturer "Nuance", product "PowerMicII-NS". These match the genuine handset and the Tartarus `pmtest` build that worked with PowerScribe.
+It works on every board HID Remapper supports. The Mavercade HID Remapper is the standard HID Remapper board.
 
-No third interface was added.
+| Board | File |
+|---|---|
+| HID Remapper board (Mavercade, original dual-chip board) | `remapper_board.uf2` |
+| HID Remapper board v7 | `remapper_board_v7.uf2` |
+| HID Remapper board v8 | `remapper_board_v8.uf2` |
+| Adafruit Feather RP2040 USB Host | `remapper_feather.uf2` |
 
-## How a PowerMic button travels
+Flash it the usual way: hold the button on the board while plugging it in, then copy the UF2 to the drive that appears. For the dual-chip boards, the combined file also updates the second chip.
 
-1. A mapping targets `0xFF01000n`, where n is the PowerMic button number.
-2. HID Remapper sets that bit in the internal Report ID 4. That report is never sent on interface 0.
-3. `do_send_report()` hands it to `powermic.cc`, which converts it to the 3-byte PowerMic report `[00][buttons 1-8][buttons 9-14]` and queues it.
-4. `powermic_task()` sends queued reports on interface 1 only when the endpoint is free, so no press or release is ever dropped.
+## Configuring
 
-| Target usage | PowerMic button | Wire report |
+Use this fork's web configurator (published to GitHub Pages from `config-tool-web/`):
+
+1. Open the configurator in Chrome or Edge and click **Open device**.
+2. In **Settings**, set **Emulated device type** to **Mouse and keyboard + PowerMic II (PowerScribe)**.
+3. In **Mappings**, add mappings. The output picker has a PowerMic section ("PowerMic Dictate (Record)" and so on).
+4. Click **Save to device**, then unplug and replug the remapper so it re-connects as a PowerMic.
+
+**Examples** has two ready-made PowerScribe setups: F1–F4, and mouse back/forward/middle buttons.
+
+The stock configurator at remapper.org also works, but it doesn't offer device type 6 in its list and shows the PowerMic targets as raw codes (`0xff010003`).
+
+### Fresh boards
+
+A board with no saved configuration starts in PowerMic mode with these mappings:
+
+| Key | Target |
+|---|---|
+| F1 | PowerMic Previous Field |
+| F2 | PowerMic Dictate |
+| F3 | PowerMic Next Field |
+| F4 | PowerMic Custom Left |
+
+A saved configuration always takes precedence.
+
+## PowerMic buttons
+
+| Target usage | Button | Report sent to PowerScribe |
 |---|---|---|
 | 0xFF010001 | Transcribe | 00 01 00 |
 | 0xFF010002 | Previous Field | 00 02 00 |
@@ -37,58 +61,45 @@ No third interface was added.
 | 0xFF01000A | Custom Right | 00 00 02 |
 | 0xFF01000B–E | Buttons 11–14 | 00 00 04 … 00 00 20 |
 
-## Default mappings (fresh board only)
+## How the PowerMic mode works
 
-If no valid configuration is saved in flash, these mappings are used. A saved configuration always takes precedence.
+The USB device always has two HID interfaces. No third interface is added.
 
-| Key | Usage | Target |
+| | Interface 0 | Interface 1 |
 |---|---|---|
-| F1 | 0x0007003A | 0xFF010002 Previous Field |
-| F2 | 0x0007003B | 0xFF010003 Dictate |
-| F3 | 0x0007003C | 0xFF010004 Next Field |
-| F4 | 0x0007003D | 0xFF010008 Custom Left |
+| Stock modes 0–5 | Emulated device | HID Remapper configuration (stock) |
+| PowerMic mode 6 | Keyboard/mouse + synthetic PowerMic targets (Report ID 4) + configuration collection (Report IDs 100/101) | Genuine 64-byte PowerMic II descriptor, 10 ms endpoint |
 
-## Configuring
+In mode 6 the device uses VID 0x0554, PID 0x1001, bcdDevice 1.43, "Nuance" / "PowerMicII-NS", matching a real PowerMic II.
 
-No separate configuration firmware is needed any more. The configuration collection now sits on interface 0, so the standard web configurator talks to the running PowerMic firmware:
+1. A mapping sets bit n of the internal Report ID 4, which is never sent on interface 0.
+2. `do_send_report()` hands it to `powermic.cc`, which converts it to the 3-byte PowerMic report and queues it.
+3. `powermic_task()` sends queued reports on interface 1 only when the endpoint is free, so a press or release is never lost. A lost release was why an earlier build "worked once": PowerScribe saw Dictate held down forever.
+4. GET_REPORT and SET_REPORT on interface 1 (input, LED output, 39-byte feature) are answered the way a real handset answers them.
 
-1. Open https://www.remapper.xyz/ in Chrome or Edge and click **Open device**. Pick the entry for the HID Remapper configuration interface.
-2. Add mappings as normal. In the target list, the PowerMic buttons appear as `0xff010001` to `0xff01000e` (use the table above). The copy of the configurator in `config-tool-web/` shows them by name instead ("PowerMic: Dictate (Record)" and so on).
-3. Click **Save to device**.
-
-The input monitor on the configurator page also works.
-
-Only the two keyboard/mouse emulation modes are supported. The gamepad modes change the VID/PID, which would drop the PowerMic identity. If one of them is selected, the firmware falls back to keyboard/mouse.
-
-## Fixes compared with the earlier build (commit 6f372f9)
-
-The earlier build worked once and then stopped. These are the defects found and fixed:
-
-1. **Lost button releases.** The PowerMic report was sent with `tud_hid_n_report()` without checking whether interface 1 was ready, and a failed send was silently discarded. If a release was lost, PowerScribe saw Dictate held down forever and ignored every later press. This was reproduced in an RP2040 emulator with a 10 ms host poll: the original logic delivered `00 04 00` and dropped the following `00 00 00`, and nothing reached the host after that. Reports are now queued and sent only when the endpoint is free.
-2. **Configuration mappings disappearing.** The mappings could only be changed by flashing a separate configuration firmware. A configuration saved from firmware that does not know the PowerMic targets replaces the PowerMic defaults, so the PowerMic mappings vanish. The configurator now works on the PowerMic firmware itself.
-3. **Stalled requests on the PowerMic interface.** Every GET_REPORT on interface 1 was answered with a STALL. Input, Output (LED) and the 39-byte Feature report are now answered the way a real handset answers them, and LED/feature writes from PowerScribe are accepted.
-4. **Altered PowerMic descriptor.** The descriptor had been edited to declare 11 buttons instead of the genuine 14. The verbatim 64-byte descriptor is restored, and the synthetic targets cover all 14 buttons.
-5. **USB identity.** bcdDevice and the manufacturer/product strings now match the genuine PowerMic II (they were "RP2040" / "HID Remapper XXXX").
+Each top-level HID collection is its own device on the host. The configurator therefore finds the configuration collection on interface 0 in mode 6 and on interface 1 in the stock modes, with no change on its side.
 
 ## Building
 
 ```
+git submodule update --init
 cd firmware
-mkdir build && cd build
-cmake -G Ninja -DPICO_BOARD=feather_host ..
-ninja remapper
-# -> remapper.uf2
+mkdir build-board && cd build-board
+PICO_BOARD=remapper cmake ..          # or remapper_v7, remapper_v8, feather_host
+make remapper_dual_combined           # dual-chip boards; use "make remapper" for v8 and feather
 ```
 
-## Testing without hardware
+The dual-chip build needs `srec_cat` (Debian/Ubuntu package `srecord`).
 
-`tests/powermic-emulator/` contains a scripted USB host for the rp2040js emulator. It enumerates the firmware, checks the descriptors and identity, drives the configurator protocol over interface 0, maps GPIO inputs to PowerMic buttons, and checks the reports that arrive on endpoint 0x83, including the busy-endpoint case above. See the README in that folder.
+Pushing a tag that starts with `r` (for example `r2026-10-17-powermic`) runs the release workflow, which builds every board and attaches the UF2 files to a GitHub Release.
 
-## Files changed
+## Tests
 
-- `firmware/src/powermic.cc`, `powermic.h` (new): descriptor, report queue, GET/SET_REPORT handling
-- `firmware/src/main.cc`: hands Report ID 4 to the PowerMic queue, routes the monitor through interface 0, limits modes to keyboard/mouse
-- `firmware/src/tinyusb_stuff.cc`: USB identity, interface 0 descriptor plus config collection, report routing
-- `firmware/src/our_descriptor.cc`: 14-button synthetic PowerMic targets, also added to the absolute-mouse mode
-- `firmware/CMakeLists.txt`: adds `powermic.cc`
-- `config-tool-web/usages.js`: PowerMic target names
+`tests/powermic-emulator/` runs the firmware on the rp2040js emulator with a scripted USB host. It checks:
+
+- PowerMic identity and descriptors
+- the configurator over interface 0
+- PowerMic button reports, including a release that happens while the previous report is still in flight
+- switching back to stock mode, saving, and rebooting
+- keyboard passthrough in stock mode
+- the dual-chip A side, with emulated B-side ticks

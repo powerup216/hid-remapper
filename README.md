@@ -1,4 +1,6 @@
-# HID Remapper
+# HID Remapper: PowerMic edition
+
+> **This fork adds a "Mouse and keyboard + PowerMic II" emulated device type** that triggers PowerScribe dictation buttons even when PowerScribe isn't the focused window. See **[POWERSCRIBE.md](POWERSCRIBE.md)** for which firmware to flash, how to configure it, and how it works.
 
 _For user documentation please see the project's website at [remapper.org](https://www.remapper.org/)._
 

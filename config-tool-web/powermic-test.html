@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PowerMic Tester</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5d6677; --line: #dde1e8;
+    --on: #d9342b; --on-text: #ffffff; --ok: #1f8a4c; --accent: #2f6fdb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151b; --card: #1b2029; --text: #e7eaf0; --muted: #9aa3b2; --line: #2c3340;
+      --on: #ff5a4f; --on-text: #12151b; --ok: #4cc283; --accent: #6b9cff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151b; --card: #1b2029; --text: #e7eaf0; --muted: #9aa3b2; --line: #2c3340;
+    --on: #ff5a4f; --on-text: #12151b; --ok: #4cc283; --accent: #6b9cff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  p { color: var(--muted); margin: 0 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 16px; }
+  button.connect { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  #status { margin-top: 12px; font-weight: 600; }
+  #status.ok { color: var(--ok); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .btn { border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; transition: background .05s, color .05s; }
+  .btn small { display: block; color: var(--muted); font-size: .75rem; }
+  .btn.on { background: var(--on); color: var(--on-text); border-color: var(--on); }
+  .btn.on small { color: var(--on-text); }
+  #raw { font: 1.4rem ui-monospace, Menlo, Consolas, monospace; letter-spacing: .05em; }
+  #log { font: .85rem ui-monospace, Menlo, Consolas, monospace; max-height: 220px; overflow: auto; color: var(--muted); white-space: pre-wrap; margin: 0; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PowerMic Tester</h1>
+  <p>Checks that the HID Remapper (PowerMic edition) is sending PowerMic II button reports, without PowerScribe. Use Chrome or Edge. Set the remapper's emulated device type to "Mouse and keyboard + PowerMic II", then replug it.</p>
+
+  <div class="card">
+    <button class="connect" id="connect">Connect PowerMic</button>
+    <div id="status">Not connected.</div>
+  </div>
+
+  <div class="card">
+    <div>Last report: <span id="raw">-- -- --</span></div>
+    <div class="grid" id="buttons" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <strong>Event log</strong>
+    <pre id="log"></pre>
+  </div>
+
+  <p style="margin-top:16px"><a href="index.html">Back to the configurator</a></p>
+</main>
+<script>
+const NAMES = ['Transcribe', 'Previous Field', 'Dictate', 'Next Field', 'Rewind', 'Fast Forward', 'Stop/Play',
+  'Custom Left', 'Enter/Select', 'Custom Right', 'Button 11', 'Button 12', 'Button 13', 'Button 14'];
+const grid = document.getElementById('buttons');
+const tiles = NAMES.map((n, i) => {
+  const d = document.createElement('div');
+  d.className = 'btn';
+  d.innerHTML = `${n}<small>button ${i + 1}</small>`;
+  grid.appendChild(d);
+  return d;
+});
+const statusEl = document.getElementById('status');
+const rawEl = document.getElementById('raw');
+const logEl = document.getElementById('log');
+const hex = (a) => Array.from(a, (x) => x.toString(16).padStart(2, '0')).join(' ');
+let prev = 0;
+
+function log(msg) {
+  const t = new Date().toLocaleTimeString();
+  logEl.textContent = `${t}  ${msg}\n` + logEl.textContent;
+}
+
+function handle(bytes) {
+  rawEl.textContent = hex(bytes);
+  // Wire format: [padding][buttons 1-8][buttons 9-14]
+  const state = (bytes[1] | ((bytes[2] & 0x3f) << 8));
+  tiles.forEach((t, i) => t.classList.toggle('on', !!(state & (1 << i))));
+  for (let i = 0; i < NAMES.length; i++) {
+    const bit = 1 << i;
+    if ((state & bit) && !(prev & bit)) log(`${NAMES[i]} pressed   [${hex(bytes)}]`);
+    if (!(state & bit) && (prev & bit)) log(`${NAMES[i]} released  [${hex(bytes)}]`);
+  }
+  prev = state;
+}
+
+async function openDevice(device) {
+  if (!device.opened) await device.open();
+  device.addEventListener('inputreport', (e) => {
+    const d = new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength);
+    handle(d.length === 3 ? d : Uint8Array.from([0, ...d]));
+  });
+  statusEl.textContent = `Connected: ${device.productName || 'PowerMic'} (0554:1001). Press a mapped key.`;
+  statusEl.className = 'ok';
+  log('connected');
+}
+
+const isPowerMicCollection = (d) => d.collections.some((c) => c.usagePage === 0x0001 && c.usage === 0x0000);
+
+document.getElementById('connect').addEventListener('click', async () => {
+  if (!('hid' in navigator)) { statusEl.textContent = 'This browser has no WebHID. Use Chrome or Edge.'; return; }
+  try {
+    const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x0554, productId: 0x1001, usagePage: 0x0001, usage: 0x0000 }] });
+    const dev = devices.find(isPowerMicCollection) || devices[0];
+    if (!dev) { statusEl.textContent = 'No PowerMic selected. Is the remapper in PowerMic mode and replugged?'; return; }
+    await openDevice(dev);
+  } catch (err) {
+    statusEl.textContent = 'Could not open: ' + err.message;
+  }
+});
+
+if ('hid' in navigator) {
+  navigator.hid.getDevices().then((ds) => { const d = ds.find(isPowerMicCollection); if (d) openDevice(d); });
+  navigator.hid.addEventListener('disconnect', () => { statusEl.textContent = 'Disconnected.'; statusEl.className = ''; log('disconnected'); });
+}
+</script>
+</body>
+</html>

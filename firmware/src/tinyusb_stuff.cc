@@ -34,8 +34,8 @@
 
 // These IDs are bogus. If you want to distribute any hardware using this,
 // you will have to get real ones.
-#define USB_VID 0xCAFE
-#define USB_PID 0xBAF2
+#define USB_VID 0x0554
+#define USB_PID 0x1001
 
 tusb_desc_device_t desc_device = {
     .bLength = sizeof(tusb_desc_device_t),
@@ -57,40 +57,55 @@ tusb_desc_device_t desc_device = {
     .bNumConfigurations = 0x01,
 };
 
+
+const uint8_t powermic_report_descriptor[] = {
+    0x05, 0x01, 0x09, 0x00, 0xA1, 0x01,
+    0x05, 0x08, 0x09, 0x4B, 0x15, 0x00,
+    0x25, 0x01, 0x95, 0x08, 0x75, 0x01,
+    0x91, 0x02, 0x05, 0x09, 0x15, 0x00,
+    0x25, 0x01, 0x75, 0x01, 0x95, 0x08,
+    0x81, 0x01, 0x19, 0x01, 0x29, 0x0B,
+    0x15, 0x00, 0x25, 0x01, 0x95, 0x0B,
+    0x81, 0x02, 0x95, 0x05, 0x81, 0x01,
+    0x05, 0xFF, 0x09, 0x00, 0x15, 0x00,
+    0x26, 0xFF, 0x00, 0x75, 0x08, 0x95,
+    0x27, 0xB1, 0x00, 0xC0,
+};
+
 const uint8_t configuration_descriptor0[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
     TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, our_descriptors[0].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, config_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor1[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
     TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, our_descriptors[1].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, config_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor2[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_INOUT_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_INOUT_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[2].descriptor_length, 0x02, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, config_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor3[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[3].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, config_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor4[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_INOUT_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_INOUT_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[4].descriptor_length, 0x02, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, config_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t configuration_descriptor5[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN, 0, 100),
     TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_NONE, our_descriptors[5].descriptor_length, 0x81, CFG_TUD_HID_EP_BUFSIZE, 1),
-    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, config_report_descriptor_length, 0x83, CFG_TUD_HID_EP_BUFSIZE, 1),
+    TUD_HID_DESCRIPTOR(1, 0, HID_ITF_PROTOCOL_NONE, sizeof(powermic_report_descriptor), 0x83, CFG_TUD_HID_EP_BUFSIZE, 10),
 };
 
 const uint8_t* configuration_descriptors[] = {
@@ -137,7 +152,7 @@ uint8_t const* tud_hid_descriptor_report_cb(uint8_t itf) {
     if (itf == 0) {
         return our_descriptor->descriptor;
     } else if (itf == 1) {
-        return config_report_descriptor;
+        return powermic_report_descriptor;
     }
 
     return NULL;
@@ -199,7 +214,7 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
     if (itf == 0) {
         return handle_get_report0(report_id, buffer, reqlen);
     } else {
-        return handle_get_report1(report_id, buffer, reqlen);
+        return 0;
     }
 }
 
@@ -211,7 +226,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
         }
         handle_set_report0(report_id, buffer, bufsize);
     } else {
-        handle_set_report1(report_id, buffer, bufsize);
+        // PowerMic LED output and feature reports are not needed for buttons.
     }
 }
 

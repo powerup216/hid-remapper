@@ -551,6 +551,46 @@ void load_config_v13(const uint8_t* persisted_config) {
 
 void load_config(const uint8_t* persisted_config) {
     if (!checksum_ok(persisted_config, PERSISTED_CONFIG_SIZE) || !persisted_version_ok(persisted_config)) {
+        // PowerScribe distribution defaults for a fresh Feather.
+        // Existing valid persisted configurations still take precedence.
+        config_mappings.clear();
+
+        config_mappings.push_back((mapping_config11_t){
+            .target_usage = 0xFF010002,
+            .source_usage = 0x0007003A,
+            .scaling = 1000,
+            .layer_mask = 0x01,
+            .flags = 0,
+            .hub_ports = 0,
+        });
+
+        config_mappings.push_back((mapping_config11_t){
+            .target_usage = 0xFF010003,
+            .source_usage = 0x0007003B,
+            .scaling = 1000,
+            .layer_mask = 0x01,
+            .flags = 0,
+            .hub_ports = 0,
+        });
+
+        config_mappings.push_back((mapping_config11_t){
+            .target_usage = 0xFF010004,
+            .source_usage = 0x0007003C,
+            .scaling = 1000,
+            .layer_mask = 0x01,
+            .flags = 0,
+            .hub_ports = 0,
+        });
+
+        config_mappings.push_back((mapping_config11_t){
+            .target_usage = 0xFF010008,
+            .source_usage = 0x0007003D,
+            .scaling = 1000,
+            .layer_mask = 0x01,
+            .flags = 0,
+            .hub_ports = 0,
+        });
+
         return;
     }
 

@@ -72,6 +72,26 @@ void __no_inline_not_in_flash_func(sof_handler)(uint32_t frame_count) {
 }
 
 bool do_send_report(uint8_t interface, const uint8_t* report_with_id, uint8_t len) {
+    // Internal PowerMic target report.
+    // Convert [ID 4][buttons 1-8][buttons 9-11 + padding]
+    // into genuine PowerMic [00][buttons 1-8][buttons 9-11].
+    if ((interface == 0) && (len >= 3) && (report_with_id[0] == 4)) {
+        uint8_t powermic_report[3] = {
+            0x00,
+            report_with_id[1],
+            (uint8_t)(report_with_id[2] & 0x07),
+        };
+
+        tud_hid_n_report(
+            1,
+            0,
+            powermic_report,
+            sizeof(powermic_report)
+        );
+
+        return true;
+    }
+
     if (tud_suspended() &&
         (our_descriptor->should_cause_wakeup != nullptr) &&
         our_descriptor->should_cause_wakeup(report_with_id[0], report_with_id + 1, len - 1)) {
@@ -306,9 +326,7 @@ int main() {
         if (tud_hid_n_ready(0) || tud_suspended()) {
             send_report(do_send_report);
         }
-        if (monitor_enabled && tud_hid_n_ready(1)) {
-            send_monitor_report(do_send_report);
-        }
+        // Interface 1 is reserved for PowerMic in runtime firmware.
         if (our_descriptor->main_loop_task != nullptr) {
             our_descriptor->main_loop_task();
         }

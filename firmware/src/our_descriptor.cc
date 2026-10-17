@@ -136,6 +136,25 @@ const uint8_t our_report_descriptor_kb_mouse[] = {
     0x95, 0x01,                //   Report Count (1)
     0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0,                      // End Collection
+
+    // Synthetic PowerMic output targets.
+    // FF01:0001 through FF01:000B = PowerMic buttons 1 through 11.
+    // Report ID 4 is intercepted in main.cc and emitted through HID interface 2.
+    0x06, 0x01, 0xFF, // Usage Page (Vendor 0xFF01)
+    0x09, 0x01,       // Usage 1
+    0xA1, 0x01,       // Collection (Application)
+    0x85, 0x04,       // Report ID 4
+    0x15, 0x00,       // Logical Minimum 0
+    0x25, 0x01,       // Logical Maximum 1
+    0x75, 0x01,       // Report Size 1
+    0x95, 0x0B,       // Report Count 11
+    0x19, 0x01,       // Usage Minimum 1
+    0x29, 0x0B,       // Usage Maximum 11
+    0x81, 0x02,       // Input (Data,Var,Abs)
+    0x95, 0x05,       // 5 padding bits
+    0x81, 0x01,       // Input (Const)
+    0xC0,             // End Collection
+
 };
 
 const uint8_t our_report_descriptor_absolute[] = {

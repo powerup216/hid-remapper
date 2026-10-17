@@ -1,4 +1,226 @@
 const examples = [
+
+        {
+            'description': "PowerScribe: F1 previous field, F2 dictate, F3 next field, F4 custom left (PowerMic II)",
+            'config': {
+                "version": 16,
+                "unmapped_passthrough_layers": [
+                    0
+                ],
+                "partial_scroll_timeout": 1000000,
+                "tap_hold_threshold": 200000,
+                "gpio_debounce_time_ms": 5,
+                "interval_override": 0,
+                "our_descriptor_number": 6,
+                "ignore_auth_dev_inputs": false,
+                "input_labels": 0,
+                "mappings": [
+                    {
+                        "target_usage": "0xff010002",
+                        "source_usage": "0x0007003a",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    },
+                    {
+                        "target_usage": "0xff010003",
+                        "source_usage": "0x0007003b",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    },
+                    {
+                        "target_usage": "0xff010004",
+                        "source_usage": "0x0007003c",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    },
+                    {
+                        "target_usage": "0xff010008",
+                        "source_usage": "0x0007003d",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    }
+                ],
+                "macros": [
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "expressions": [
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ],
+                "macro_entry_duration": 1,
+                "gpio_output_mode": 0,
+                "quirks": []
+            }
+        },
+        {
+            'description': "PowerScribe: mouse back/forward buttons are previous/next field, middle button is dictate (PowerMic II)",
+            'config': {
+                "version": 16,
+                "unmapped_passthrough_layers": [
+                    0
+                ],
+                "partial_scroll_timeout": 1000000,
+                "tap_hold_threshold": 200000,
+                "gpio_debounce_time_ms": 5,
+                "interval_override": 0,
+                "our_descriptor_number": 6,
+                "ignore_auth_dev_inputs": false,
+                "input_labels": 0,
+                "mappings": [
+                    {
+                        "target_usage": "0xff010002",
+                        "source_usage": "0x00090004",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    },
+                    {
+                        "target_usage": "0xff010004",
+                        "source_usage": "0x00090005",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    },
+                    {
+                        "target_usage": "0xff010003",
+                        "source_usage": "0x00090003",
+                        "scaling": 1000,
+                        "layers": [
+                            0
+                        ],
+                        "sticky": false,
+                        "tap": false,
+                        "hold": false,
+                        "source_port": 0,
+                        "target_port": 0
+                    }
+                ],
+                "macros": [
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "expressions": [
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ],
+                "macro_entry_duration": 1,
+                "gpio_output_mode": 0,
+                "quirks": []
+            }
+        },
     {
         'description': 'map caps lock to control',
         'config': {

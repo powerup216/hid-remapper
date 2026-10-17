@@ -1227,6 +1227,7 @@ function setup_usage_modal(source_or_target) {
         'gamepad': modal_element.querySelector('.gamepad_usages'),
         'keyboard': modal_element.querySelector('.keyboard_usages'),
         'media': modal_element.querySelector('.media_usages'),
+        'powermic': modal_element.querySelector('.powermic_usages'),
         'other': modal_element.querySelector('.other_usages'),
         'extra': modal_element.querySelector('.extra_usages'),
     };

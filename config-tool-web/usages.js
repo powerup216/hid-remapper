@@ -425,20 +425,6 @@ const usages = {
         "0x000c00b7": { 'name': 'Stop', 'class': 'media' },
         "0x000c00b5": { 'name': 'Next track', 'class': 'media' },
         "0x000c00b6": { 'name': 'Previous track', 'class': 'media' },
-        "0xff010001": { 'name': 'PowerMic: Transcribe', 'class': 'other' },
-        "0xff010002": { 'name': 'PowerMic: Previous Field (Tab Back)', 'class': 'other' },
-        "0xff010003": { 'name': 'PowerMic: Dictate (Record)', 'class': 'other' },
-        "0xff010004": { 'name': 'PowerMic: Next Field (Tab Forward)', 'class': 'other' },
-        "0xff010005": { 'name': 'PowerMic: Rewind', 'class': 'other' },
-        "0xff010006": { 'name': 'PowerMic: Fast Forward', 'class': 'other' },
-        "0xff010007": { 'name': 'PowerMic: Stop/Play', 'class': 'other' },
-        "0xff010008": { 'name': 'PowerMic: Custom Left', 'class': 'other' },
-        "0xff010009": { 'name': 'PowerMic: Enter/Select', 'class': 'other' },
-        "0xff01000a": { 'name': 'PowerMic: Custom Right', 'class': 'other' },
-        "0xff01000b": { 'name': 'PowerMic: Button 11', 'class': 'other' },
-        "0xff01000c": { 'name': 'PowerMic: Button 12', 'class': 'other' },
-        "0xff01000d": { 'name': 'PowerMic: Button 13', 'class': 'other' },
-        "0xff01000e": { 'name': 'PowerMic: Button 14', 'class': 'other' },
     },
     2: {
         "0x00090001": { 'name': 'Y', 'class': 'mouse' },
@@ -660,5 +646,26 @@ Object.assign(usages[3], common_target_usages);
 Object.assign(usages[4], common_target_usages);
 Object.assign(usages[5], common_target_usages);
 usages[1] = usages[0]; // absolute mouse & keyboard is the same as regular mouse & keyboard
+
+// Emulated device type 6: mouse & keyboard + Nuance PowerMic II.
+// FF01:000n = PowerMic button n, delivered to PowerScribe through the
+// PowerMic HID interface (works without PowerScribe having focus).
+const powermic_usages = {
+    "0xff010001": { 'name': 'PowerMic Transcribe', 'class': 'powermic' },
+    "0xff010002": { 'name': 'PowerMic Previous Field (Tab Back)', 'class': 'powermic' },
+    "0xff010003": { 'name': 'PowerMic Dictate (Record)', 'class': 'powermic' },
+    "0xff010004": { 'name': 'PowerMic Next Field (Tab Forward)', 'class': 'powermic' },
+    "0xff010005": { 'name': 'PowerMic Rewind', 'class': 'powermic' },
+    "0xff010006": { 'name': 'PowerMic Fast Forward', 'class': 'powermic' },
+    "0xff010007": { 'name': 'PowerMic Stop/Play', 'class': 'powermic' },
+    "0xff010008": { 'name': 'PowerMic Custom Left', 'class': 'powermic' },
+    "0xff010009": { 'name': 'PowerMic Enter/Select', 'class': 'powermic' },
+    "0xff01000a": { 'name': 'PowerMic Custom Right', 'class': 'powermic' },
+    "0xff01000b": { 'name': 'PowerMic Button 11', 'class': 'powermic' },
+    "0xff01000c": { 'name': 'PowerMic Button 12', 'class': 'powermic' },
+    "0xff01000d": { 'name': 'PowerMic Button 13', 'class': 'powermic' },
+    "0xff01000e": { 'name': 'PowerMic Button 14', 'class': 'powermic' },
+};
+usages[6] = { ...usages[0], ...powermic_usages };
 
 export default usages;
